@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!--
+  namespace属性必须是对应接口的全限定名，用于和接口联系起来
+-->
+<mapper namespace="com.bjpowernode.crm.workbench.dao.ActivityDao">
+
+    <!--
+       创建市场活动信息的SQL
+    -->
+     <insert id="add">
+
+         insert into tbl_activity(
+            id,
+            owner,
+            name,
+            startDate,
+            endDate,
+            cost,
+            description,
+            createTime,
+            createBy
+         )
+         values(
+            #{id},
+            #{owner},
+            #{name},
+            #{startDate},
+            #{endDate},
+            #{cost},
+            #{description},
+            #{createTime},
+            #{createBy}
+         )
+
+     </insert>
+
+    <!--
+      取得市场活动信息列表的SQL
+    -->
+    <select id="getActivityListByCondition" resultType="Activity">
+
+       select
+         a.id, <!--一条市场活动的id 由于两张表都有id，属于公共字段，必须加别名加以区分-->
+         a.name,
+         u.name as owner,  <!--由于我们在前端展现的是用户的名字，不是外键owner，所以必须联查并起别名-->
+         a.startDate,
+         a.endDate
+
+       from tbl_activity a
+       join tbl_user u
+       on a.owner = u.id  <!--连接条件用on引导-->
+
+       <!--动态SQL 用于解决用户的条件查询问题-->
+       <where>
+
+         <if test="name!=null and name!=''">
+
+            a.name like '%' #{name} '%'
+
+         </if>
+
+         <if test="owner!=null and owner!=''">
+
+            and u.name like '%' #{owner} '%'
+
+         </if>
+
+         <if test="startDate!=null and startDate!=''">
+
+            and a.startDate &gt; #{startDate}
+
+         </if>
+
+         <if test="endDate!=null and endDate!=''">
+
+            and a.endDate &lt; #{endDate}
+
+         </if>
+
+       </where>
+
+       order by a.createTime desc  <!--按照市场活动创建的时间降序排序，越新的在最前面-->
+
+       limit #{skipCount},#{pageSize}
+
+    </select>
+
+    <!--取得市场活动查询总条数的SQL-->
+    <select id="getTotalByCondition" resultType="int">
+
+        select count(*)
+
+        from tbl_activity a
+        join tbl_user u
+        on a.owner = u.id  <!--连接条件用on引导-->
+
+        <!--动态SQL 用于解决用户的条件查询问题-->
+        <where>
+
+            <if test="name!=null and name!=''">
+
+                a.name like '%' #{name} '%'
+
+            </if>
+
+            <if test="owner!=null and owner!=''">
+
+                and u.name like '%' #{owner} '%'
+
+            </if>
+
+            <if test="startDate!=null and startDate!=''">
+
+                and a.startDate &gt; #{startDate}
+
+            </if>
+
+            <if test="endDate!=null and endDate!=''">
+
+                and a.endDate &lt; #{endDate}
+
+            </if>
+
+        </where>
+
+    </select>
+
+    <delete id="delete">
+
+        delete from tbl_activity
+
+        where id in
+
+        <foreach collection="array" item="id" open="(" close=")" separator=",">
+
+         #{id}
+
+        </foreach>
+
+    </delete>
+
+    <select id="getActivityById" resultType="Activity">
+
+        select
+         id,
+         owner,
+         name,
+         startDate,
+         endDate,
+         cost,
+         description,
+         createTime,
+         createBy,
+         editTime,
+         editBy
+        from tbl_activity
+        where
+         id=#{id}
+
+
+    </select>
+
+    <update id="update">
+
+      update tbl_activity
+      set
+        owner=#{owner},
+        name=#{name},
+        startDate=#{startDate},
+        endDate=#{endDate},
+        cost=#{cost},
+        description=#{description},
+        editTime=#{editTime},
+        editBy=#{editBy}
+      where
+        id=#{id}
+    </update>
+
+    <select id="detail" resultType="Activity">
+     select
+        a.id,
+        u.name as owner,
+        a.name,
+        a.startDate,
+        a.endDate,
+        a.cost,
+        a.description,
+        a.createTime,
+        a.createBy,
+        a.editTime,
+        a.editBy
+      from tbl_activity a join tbl_user u
+      on
+       a.owner = u.id
+      where
+       a.id=#{aId}
+    </select>
+
+    <select id="getActivityByClueId" resultType="Activity">
+        select
+          car.id,
+          u.name as owner,
+          a.name,
+          a.startDate,
+          a.endDate
+
+        from tbl_activity a
+        join tbl_user u
+        on
+         a.owner=u.id
+        join tbl_clue_activity_relation car
+        on
+         car.activityId=a.id
+         where
+          car.clueId=#{clueId}
+    </select>
+
+    <select id="getActivityListByActivityNameAndClueId" resultType="Activity">
+
+        select
+         a.id,
+         a.name,
+         a.startDate,
+         a.endDate,
+         u.name as owner
+        from tbl_activity a
+        join tbl_user u
+        on
+         a.owner=u.id
+        where
+         a.id not in(
+           select activityId from tbl_clue_activity_relation
+           where clueId=#{clueId}
+         )
+         and
+         a.name like '%' #{aName} '%'
+
+
+    </select>
+
+    <select id="getActivityListByActivityName" resultType="Activity">
+
+        select
+          a.id,
+          a.name,
+          u.name as owner,
+          a.startDate,
+          a.endDate
+        from tbl_activity a
+        join tbl_user u
+        on
+         a.owner=u.id
+        where
+         a.name like '%' #{aname} '%'
+
+    </select>
+
+</mapper>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
